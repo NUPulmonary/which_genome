@@ -6,7 +6,7 @@ import gzip
 ref_dir = os.path.realpath(os.path.dirname(__file__))
 
 
-def read_genes(f):
+def read_genes(f, idx=0):
     result = []
     sep = "\t"
     if f.endswith(".csv"):
@@ -18,7 +18,11 @@ def read_genes(f):
         f = open(f, "rt")
 
     for l in f:
-        result.append(l.split(sep)[0])
+        value = l.strip().split(sep)[idx]
+        if value and value[0] == '"' and value[-1] == '"':
+            value = value[1:-1].replace('""', '"')
+        if value:
+            result.append(value)
     f.close()
     return result
 
@@ -28,6 +32,10 @@ def which_build(features):
     min_genes = None
     min_answer = None
     given_genes = read_genes(features)
+    is_ensembl_ids = given_genes[0].startswith("ENS")
+    ref_idx = 0
+    if not is_ensembl_ids:
+        ref_idx = 1
     for d in os.listdir(ref_dir):
         dir_path = os.path.join(ref_dir, d)
         if not os.path.isdir(dir_path):
@@ -35,7 +43,7 @@ def which_build(features):
         ref_genes_path = os.path.join(dir_path, "genes.csv")
         if not os.path.exists(ref_genes_path):
             continue
-        ref_genes = read_genes(ref_genes_path)
+        ref_genes = read_genes(ref_genes_path, idx=ref_idx)
         result[d] = len(set(given_genes) - set(ref_genes))
         if min_genes is None:
             min_genes = result[d]
