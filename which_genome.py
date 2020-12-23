@@ -1,3 +1,4 @@
+#!/bin/env python
 import os
 import sys
 import gzip
@@ -27,7 +28,7 @@ def read_genes(f, idx=0):
     return result
 
 
-def which_build(features):
+def which_build(features, verbose=False):
     result = {}
     min_genes = None
     min_answer = None
@@ -44,14 +45,14 @@ def which_build(features):
         if not os.path.exists(ref_genes_path):
             continue
         ref_genes = read_genes(ref_genes_path, idx=ref_idx)
-        result[d] = len(set(given_genes) - set(ref_genes))
+        result[d] = set(given_genes) - set(ref_genes)
         if min_genes is None:
-            min_genes = result[d]
+            min_genes = len(result[d])
             min_answer = [d]
-        elif result[d] < min_genes:
-            min_genes = result[d]
+        elif len(result[d]) < min_genes:
+            min_genes = len(result[d])
             min_answer = [d]
-        elif result[d] == min_genes:
+        elif len(result[d]) == min_genes:
             min_answer.append(d)
     if min_genes == 0:
         if len(min_answer) == 1:
@@ -60,12 +61,27 @@ def which_build(features):
             print(f"All genes in {features} come from builds {', '.join(min_answer)}")
     else:
         print(f"No build provides full set of genes for {features}. Here's the number of missing genes per build:")
-        for build, num in sorted(result.items(), key=lambda x: x[1]):
-            print(f"  {build}: {num}")
+        for build, genes in sorted(result.items(), key=lambda x: len(x[1])):
+            print(f"  {build}: {len(genes)}")
+        if verbose:
+            for build, genes in sorted(result.items(), key=lambda x: len(x[1])):
+                print(f"Genes absent in build {build}:")
+                genes = list(genes)
+                for i in range(-(len(genes) // -10)): # this is math.ceil equivalent
+                    print(f"  {' '.join(genes[i:i+10])}")
+                break
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: which_genome.py path/to/cellbrowser/features.tsv.gz")
+    if len(sys.argv) < 2:
+        print("Usage: which_genome.py [-v] path/to/cellbrowser/features.tsv.gz")
         sys.exit(1)
-    which_build(sys.argv[1])
+    args = []
+    verbose = False
+    for i in sys.argv[1:]:
+        if i == "-v":
+            verbose = True
+        else:
+            args.append(i)
+
+    which_build(*args, verbose=verbose)
