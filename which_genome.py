@@ -68,7 +68,7 @@ def which_build(features, verbose=False):
                 print(f"Genes absent in build {build}:")
                 genes = list(genes)
                 for i in range(-(len(genes) // -10)): # this is math.ceil equivalent
-                    print(f"  {' '.join(genes[i:i+10])}")
+                    print(f"  {' '.join(genes[i * 10:(i + 1) * 10])}")
                 break
 
 
